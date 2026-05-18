@@ -1,0 +1,22 @@
+{
+  "name": "@e11community/npm-auth",
+  "version": "1.0.0",
+  "private": true,
+  "bin": {
+    "npm-auth": "./dist/cli.js"
+  },
+  "scripts": {
+    "build:action": "esbuild src/action.ts --bundle --platform=node --target=node24 --format=cjs --minify --outfile=dist/action.js",
+    "build:cli": "esbuild src/cli.ts --bundle --platform=node --target=node24 --format=cjs --minify --outfile=dist/cli.js --banner:js='#!/usr/bin/env node'",
+    "build": "npm run build:action && npm run build:cli && chmod +x dist/cli.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@actions/core": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.3.0"
+  }
+}

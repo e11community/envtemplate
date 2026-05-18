@@ -1,0 +1,12 @@
+build
+.claude/settings.local.json
+discovered/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea
+node_modules
+*.tsbuildinfo
+.vscode
