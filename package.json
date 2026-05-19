@@ -13,7 +13,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@actions/core": "^3.0.1"
+    "@actions/core": "^3.0.1",
+    "dotenv": "^17.4.2"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

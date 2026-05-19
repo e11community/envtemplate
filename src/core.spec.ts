@@ -73,4 +73,39 @@ describe('generateNpmrc', () => {
       delete process.env[KEY]
     }
   })
+
+  describe('templatePath fallback', () => {
+    it('falls back leftward when the rightmost candidate does not exist', async () => {
+      const { outputPath } = paths()
+      const fallback = join(dir, 'fallback.tmpl')
+      const missing = join(dir, 'does-not-exist.tmpl')
+      await writeFile(fallback, 'used=fallback')
+
+      await generateNpmrc({ templatePath: [fallback, missing], outputPath, env: {} })
+
+      expect(await readFile(outputPath, 'utf8')).toBe('used=fallback')
+    })
+
+    it('prefers the rightmost existing candidate and does not read earlier ones', async () => {
+      const { outputPath } = paths()
+      const first = join(dir, 'first.tmpl')
+      const last = join(dir, 'last.tmpl')
+      await writeFile(first, 'used=first')
+      await writeFile(last, 'used=last')
+
+      await generateNpmrc({ templatePath: [first, last], outputPath, env: {} })
+
+      expect(await readFile(outputPath, 'utf8')).toBe('used=last')
+    })
+
+    it('throws when all candidates are missing, listing each path in the message', async () => {
+      const { outputPath } = paths()
+      const a = join(dir, 'missing-a.tmpl')
+      const b = join(dir, 'missing-b.tmpl')
+
+      await expect(
+        generateNpmrc({ templatePath: [a, b], outputPath, env: {} }),
+      ).rejects.toThrow(new RegExp(`No template file found.*${a}.*${b}`))
+    })
+  })
 })

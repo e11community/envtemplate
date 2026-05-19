@@ -1,3 +1,5 @@
+import { parse as parseDotenv } from 'dotenv'
+import { readFile } from 'fs/promises'
 import { generateNpmrc } from './core.js'
 import type { OnMissing } from './envsubst.js'
 
@@ -7,16 +9,22 @@ Render a template to an .npmrc file, substituting \${VAR} references from
 the environment.
 
 Options:
-  --template <path>      Path to template file (default: .npmrc.tmpl)
+  --template <path>      Path to template file. May be passed multiple
+                         times; the rightmost existing file is used,
+                         falling back leftward. (default: .npmrc.tmpl)
   --output <path>        Path to output file (default: .npmrc)
+  --env <path>           Path to a .env-style file. When set, substitution
+                         variables come from this file (parsed by dotenv)
+                         instead of process.env.
   --on-missing <mode>    Behavior on missing var: error | empty | keep
                          (default: empty)
   -h, --help             Show this help and exit
 `
 
 interface ParsedArgs {
-  template: string
+  templates: string[]
   output: string
+  envFile?: string
   onMissing: OnMissing
   help: boolean
 }
@@ -26,8 +34,9 @@ function isOnMissing(value: string): value is OnMissing {
 }
 
 function parseArgs(argv: readonly string[]): ParsedArgs {
-  let template = '.npmrc.tmpl'
+  const templates: string[] = []
   let output = '.npmrc'
+  let envFile: string | undefined
   let onMissing: OnMissing = 'empty'
   let help = false
 
@@ -53,13 +62,19 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
         break
       case '--template': {
         const [value, next] = takeValue(name, inline, i)
-        template = value
+        templates.push(value)
         i = next
         break
       }
       case '--output': {
         const [value, next] = takeValue(name, inline, i)
         output = value
+        i = next
+        break
+      }
+      case '--env': {
+        const [value, next] = takeValue(name, inline, i)
+        envFile = value
         i = next
         break
       }
@@ -77,7 +92,11 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
     }
   }
 
-  return { template, output, onMissing, help }
+  if (templates.length === 0) {
+    templates.push('.npmrc.tmpl')
+  }
+
+  return { templates, output, envFile, onMissing, help }
 }
 
 async function main(): Promise<number> {
@@ -95,10 +114,17 @@ async function main(): Promise<number> {
   }
 
   try {
+    let env: Record<string, string> | undefined
+    if (parsed.envFile !== undefined) {
+      const contents = await readFile(parsed.envFile, 'utf8')
+      env = parseDotenv(contents)
+    }
+
     await generateNpmrc({
-      templatePath: parsed.template,
+      templatePath: parsed.templates,
       outputPath: parsed.output,
       onMissing: parsed.onMissing,
+      env,
     })
     return 0
   } catch (err) {
