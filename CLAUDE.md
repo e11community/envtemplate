@@ -1,0 +1,1 @@
+- Respect .prettierrc when generating code. Semicolons at the end of .ts line is WRONG

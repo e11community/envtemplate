@@ -1,5 +1,5 @@
 {
-  "name": "@e11community/npm-auth",
+  "name": "@e11community/npmrc-auth",
   "version": "1.0.0",
   "private": true,
   "bin": {
@@ -9,14 +9,18 @@
     "build:action": "esbuild src/action.ts --bundle --platform=node --target=node24 --format=cjs --minify --outfile=dist/action.js",
     "build:cli": "esbuild src/cli.ts --bundle --platform=node --target=node24 --format=cjs --minify --outfile=dist/cli.js --banner:js='#!/usr/bin/env node'",
     "build": "npm run build:action && npm run build:cli && chmod +x dist/cli.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "jest"
   },
   "dependencies": {
     "@actions/core": "^3.0.1"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.12.4",
     "esbuild": "^0.28.0",
-    "typescript": "^5.3.0"
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.9",
+    "typescript": "^6.0.3"
   }
 }
