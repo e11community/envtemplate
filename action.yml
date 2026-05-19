@@ -1,0 +1,31 @@
+name: envtemplate
+description: Render an output file from a template with ${VAR} substitution from environment variables.
+
+inputs:
+  templates:
+    description: |
+      Newline-separated list of template candidate paths. The rightmost
+      existing file is used, falling back leftward. Required.
+    required: true
+  output:
+    description: Path to the output file. Required.
+    required: true
+  output-mode:
+    description: |
+      File mode for the output file (chmod-style octal, e.g. "600", "644").
+      Default: "600".
+    required: false
+  env:
+    description: |
+      Optional dotenv-format KEY=VALUE lines used as the substitution env.
+      Overrides keys provided by env-file on collision.
+    required: false
+  env-file:
+    description: |
+      Optional path to a .env-style file (parsed by dotenv). Combined
+      with the env input, with env winning on key collisions.
+    required: false
+
+runs:
+  using: node24
+  main: dist/action.js

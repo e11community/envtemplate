@@ -1,23 +1,25 @@
 import { parse as parseDotenv } from 'dotenv'
 import { access, readFile, writeFile } from 'fs/promises'
-import { generateNpmrc } from './core.js'
+import { DEFAULT_OUTPUT_MODE, renderTemplate } from './core.js'
 import { envsubst, type OnMissing } from './envsubst.js'
 
-const USAGE = `Usage: npm-auth [options]
+const USAGE = `Usage: envtemplate --template <path> --output <path> [options]
 
-Render a template to an .npmrc file, substituting \${VAR} references from
-the environment.
+Render a template, substituting \${VAR} references from the environment.
 
-Options:
-  --template <path>      Path to template file. May be passed multiple
+Required:
+  --template <path>      Path to a template file. May be passed multiple
                          times; the rightmost existing file is used,
                          falling back leftward. Use "-" for stdin.
-                         (default: .npmrc.tmpl)
-  --output <path>        Path to output file. Use "-" for stdout.
-                         (default: .npmrc)
+  --output <path>        Path to the output file. Use "-" for stdout.
+
+Options:
   --env <path>           Path to a .env-style file. When set, substitution
                          variables come from this file (parsed by dotenv)
                          instead of process.env.
+  --output-mode <octal>  File mode for the output file (chmod-style octal,
+                         e.g. 600, 644). Ignored when --output is "-".
+                         (default: 600)
   --on-missing <mode>    Behavior on missing var: error | empty | keep
                          (default: empty)
   -h, --help             Show this help and exit
@@ -26,6 +28,7 @@ Options:
 interface ParsedArgs {
   templates: string[]
   output: string
+  outputMode?: number
   envFile?: string
   onMissing: OnMissing
   help: boolean
@@ -35,9 +38,19 @@ function isOnMissing(value: string): value is OnMissing {
   return value === 'error' || value === 'empty' || value === 'keep'
 }
 
+function parseOctalMode(value: string): number {
+  if (!/^[0-7]+$/.test(value)) {
+    throw new Error(
+      `Invalid --output-mode value: ${value} (expected chmod-style octal, e.g. 600)`,
+    )
+  }
+  return parseInt(value, 8)
+}
+
 function parseArgs(argv: readonly string[]): ParsedArgs {
   const templates: string[] = []
-  let output = '.npmrc'
+  let output: string | undefined
+  let outputMode: number | undefined
   let envFile: string | undefined
   let onMissing: OnMissing = 'empty'
   let help = false
@@ -80,6 +93,12 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
         i = next
         break
       }
+      case '--output-mode': {
+        const [value, next] = takeValue(name, inline, i)
+        outputMode = parseOctalMode(value)
+        i = next
+        break
+      }
       case '--on-missing': {
         const [value, next] = takeValue(name, inline, i)
         if (!isOnMissing(value)) {
@@ -94,11 +113,18 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
     }
   }
 
-  if (templates.length === 0) {
-    templates.push('.npmrc.tmpl')
+  if (help) {
+    return { templates, output: '', outputMode, envFile, onMissing, help }
   }
 
-  return { templates, output, envFile, onMissing, help }
+  if (templates.length === 0) {
+    throw new Error('Missing required argument: --template')
+  }
+  if (output === undefined) {
+    throw new Error('Missing required argument: --output')
+  }
+
+  return { templates, output, outputMode, envFile, onMissing, help }
 }
 
 async function readStdin(): Promise<string> {
@@ -127,12 +153,12 @@ async function resolveTemplate(candidates: readonly string[]): Promise<string> {
   throw new Error(`No template file found. Tried: ${candidates.join(', ')}`)
 }
 
-async function writeOutput(path: string, content: string): Promise<void> {
+async function writeOutput(path: string, content: string, mode: number): Promise<void> {
   if (path === '-') {
     process.stdout.write(content)
     return
   }
-  await writeFile(path, content, { mode: 0o600 })
+  await writeFile(path, content, { mode })
 }
 
 async function main(): Promise<number> {
@@ -160,16 +186,17 @@ async function main(): Promise<number> {
     const usesStdout = parsed.output === '-'
 
     if (!usesStdin && !usesStdout) {
-      await generateNpmrc({
+      await renderTemplate({
         templatePath: parsed.templates,
         outputPath: parsed.output,
+        outputMode: parsed.outputMode,
         onMissing: parsed.onMissing,
         env,
       })
     } else {
       const template = await resolveTemplate(parsed.templates)
       const rendered = envsubst(template, { env, onMissing: parsed.onMissing })
-      await writeOutput(parsed.output, rendered)
+      await writeOutput(parsed.output, rendered, parsed.outputMode ?? DEFAULT_OUTPUT_MODE)
     }
     return 0
   } catch (err) {

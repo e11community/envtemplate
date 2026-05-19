@@ -1,14 +1,22 @@
 {
-  "name": "@e11community/npmrc-auth",
+  "name": "@e11community/envtemplate",
   "version": "1.0.0",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/e11community/envtemplate.git"
+  },
+  "files": ["dist/", "action.yml"],
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
-    "npmrc-auth": "./dist/cli.js"
+    "envtemplate": "./dist/cli.js"
   },
   "scripts": {
     "build:action": "esbuild src/action.ts --bundle --platform=node --target=node24 --format=cjs --minify --outfile=dist/action.js",
     "build:cli": "esbuild src/cli.ts --bundle --platform=node --target=node24 --format=cjs --minify --outfile=dist/cli.js --banner:js='#!/usr/bin/env node'",
     "build": "npm run build:action && npm run build:cli && chmod +x dist/cli.js",
+    "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit",
     "pretest": "npm run build:cli",
     "test": "jest"

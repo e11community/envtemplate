@@ -1,4 +1,5 @@
 name: Install microservice
+description: Install a microservice
 
 on:
   push:
@@ -28,7 +29,7 @@ jobs:
       # alternative for reading the same shape from a path; if both are
       # given, `env` overrides `env-file`.
       - name: Render .npmrc
-        uses: e11community/npmrc-auth@v1
+        uses: '@e11community/envtemplate@v1'
         with:
           templates: |
             impl/microservices/.npmrc.tmpl

@@ -43,7 +43,7 @@ describe('cli stdin/stdout', () => {
   let dir: string
 
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), 'npmrc-auth-cli-spec-'))
+    dir = await mkdtemp(join(tmpdir(), 'envtemplate-cli-spec-'))
   })
 
   afterEach(async () => {
@@ -62,7 +62,7 @@ describe('cli stdin/stdout', () => {
   })
 
   it('reads template from stdin and writes to a file with mode 0o600', async () => {
-    const out = join(dir, '.npmrc')
+    const out = join(dir, 'output')
 
     const result = await runCli(['--template', '-', '--output', out], {
       stdin: 'token=${BAR}',
@@ -76,7 +76,7 @@ describe('cli stdin/stdout', () => {
   })
 
   it('reads template from a file and writes rendered output to stdout', async () => {
-    const tmpl = join(dir, '.npmrc.tmpl')
+    const tmpl = join(dir, 'template.tmpl')
     await writeFile(tmpl, 'token=${BAR}')
 
     const result = await runCli(['--template', tmpl, '--output', '-'], {
@@ -88,7 +88,7 @@ describe('cli stdin/stdout', () => {
   })
 
   it('prefers stdin when it is the rightmost candidate (overrides earlier file)', async () => {
-    const tmpl = join(dir, '.npmrc.tmpl')
+    const tmpl = join(dir, 'template.tmpl')
     await writeFile(tmpl, 'from=file')
 
     const result = await runCli(
@@ -110,5 +110,42 @@ describe('cli stdin/stdout', () => {
 
     expect(result.code).toBe(0)
     expect(result.stdout).toBe('from=stdin')
+  })
+
+  it('respects --output-mode for file output', async () => {
+    const out = join(dir, 'output')
+
+    const result = await runCli(
+      ['--template', '-', '--output', out, '--output-mode', '644'],
+      { stdin: 'x' },
+    )
+
+    expect(result.code).toBe(0)
+    const st = await stat(out)
+    expect(st.mode & 0o777).toBe(0o644)
+  })
+
+  it('exits with code 2 on an invalid --output-mode', async () => {
+    const result = await runCli(
+      ['--template', '-', '--output', '-', '--output-mode', '9ab'],
+      { stdin: 'unused' },
+    )
+
+    expect(result.code).toBe(2)
+    expect(result.stderr).toContain('Invalid --output-mode')
+  })
+
+  it('exits with code 2 and a clear error when --template is omitted', async () => {
+    const result = await runCli(['--output', '-'])
+
+    expect(result.code).toBe(2)
+    expect(result.stderr).toContain('Missing required argument: --template')
+  })
+
+  it('exits with code 2 and a clear error when --output is omitted', async () => {
+    const result = await runCli(['--template', '-'], { stdin: 'unused' })
+
+    expect(result.code).toBe(2)
+    expect(result.stderr).toContain('Missing required argument: --output')
   })
 })

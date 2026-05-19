@@ -2,13 +2,13 @@ import { afterEach, beforeEach, describe, expect, it } from '@jest/globals'
 import { mkdtemp, readFile, rm, stat, writeFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { generateNpmrc } from './core'
+import { renderTemplate } from './core'
 
-describe('generateNpmrc', () => {
+describe('renderTemplate', () => {
   let dir: string
 
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), 'npmrc-auth-spec-'))
+    dir = await mkdtemp(join(tmpdir(), 'envtemplate-spec-'))
   })
 
   afterEach(async () => {
@@ -16,29 +16,37 @@ describe('generateNpmrc', () => {
   })
 
   const paths = () => ({
-    templatePath: join(dir, '.npmrc.tmpl'),
-    outputPath: join(dir, '.npmrc'),
+    templatePath: join(dir, 'template.tmpl'),
+    outputPath: join(dir, 'output'),
   })
 
   it('reads the template, substitutes env, and writes rendered content to outputPath', async () => {
     const { templatePath, outputPath } = paths()
-    await writeFile(templatePath, '//npm.pkg.github.com/:_authToken=${TOKEN}\n')
+    await writeFile(templatePath, 'token=${TOKEN}\n')
 
-    await generateNpmrc({ templatePath, outputPath, env: { TOKEN: 'abc123' } })
+    await renderTemplate({ templatePath, outputPath, env: { TOKEN: 'abc123' } })
 
-    expect(await readFile(outputPath, 'utf8')).toBe(
-      '//npm.pkg.github.com/:_authToken=abc123\n',
-    )
+    expect(await readFile(outputPath, 'utf8')).toBe('token=abc123\n')
   })
 
-  it('creates the output file with mode 0o600', async () => {
+  it('creates the output file with mode 0o600 by default', async () => {
     const { templatePath, outputPath } = paths()
     await writeFile(templatePath, 'x')
 
-    await generateNpmrc({ templatePath, outputPath, env: {} })
+    await renderTemplate({ templatePath, outputPath, env: {} })
 
     const st = await stat(outputPath)
     expect(st.mode & 0o777).toBe(0o600)
+  })
+
+  it('respects a custom outputMode', async () => {
+    const { templatePath, outputPath } = paths()
+    await writeFile(templatePath, 'x')
+
+    await renderTemplate({ templatePath, outputPath, outputMode: 0o644, env: {} })
+
+    const st = await stat(outputPath)
+    expect(st.mode & 0o777).toBe(0o644)
   })
 
   it("propagates onMissing: 'error' as a rejection when a var is missing", async () => {
@@ -46,7 +54,7 @@ describe('generateNpmrc', () => {
     await writeFile(templatePath, 'value=${MISSING_KEY}')
 
     await expect(
-      generateNpmrc({ templatePath, outputPath, onMissing: 'error', env: {} }),
+      renderTemplate({ templatePath, outputPath, onMissing: 'error', env: {} }),
     ).rejects.toThrow(/MISSING_KEY/)
   })
 
@@ -54,7 +62,7 @@ describe('generateNpmrc', () => {
     const { templatePath, outputPath } = paths()
     await writeFile(templatePath, 'value=[${MISSING}]')
 
-    await generateNpmrc({ templatePath, outputPath, env: {} })
+    await renderTemplate({ templatePath, outputPath, env: {} })
 
     expect(await readFile(outputPath, 'utf8')).toBe('value=[]')
   })
@@ -66,7 +74,7 @@ describe('generateNpmrc', () => {
       const { templatePath, outputPath } = paths()
       await writeFile(templatePath, `v=\${${KEY}}`)
 
-      await generateNpmrc({ templatePath, outputPath, env: { [KEY]: 'from-arg' } })
+      await renderTemplate({ templatePath, outputPath, env: { [KEY]: 'from-arg' } })
 
       expect(await readFile(outputPath, 'utf8')).toBe('v=from-arg')
     } finally {
@@ -81,7 +89,7 @@ describe('generateNpmrc', () => {
       const missing = join(dir, 'does-not-exist.tmpl')
       await writeFile(fallback, 'used=fallback')
 
-      await generateNpmrc({ templatePath: [fallback, missing], outputPath, env: {} })
+      await renderTemplate({ templatePath: [fallback, missing], outputPath, env: {} })
 
       expect(await readFile(outputPath, 'utf8')).toBe('used=fallback')
     })
@@ -93,7 +101,7 @@ describe('generateNpmrc', () => {
       await writeFile(first, 'used=first')
       await writeFile(last, 'used=last')
 
-      await generateNpmrc({ templatePath: [first, last], outputPath, env: {} })
+      await renderTemplate({ templatePath: [first, last], outputPath, env: {} })
 
       expect(await readFile(outputPath, 'utf8')).toBe('used=last')
     })
@@ -104,7 +112,7 @@ describe('generateNpmrc', () => {
       const b = join(dir, 'missing-b.tmpl')
 
       await expect(
-        generateNpmrc({ templatePath: [a, b], outputPath, env: {} }),
+        renderTemplate({ templatePath: [a, b], outputPath, env: {} }),
       ).rejects.toThrow(new RegExp(`No template file found.*${a}.*${b}`))
     })
   })
