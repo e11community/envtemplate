@@ -1,0 +1,42 @@
+name: Install microservice
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [service-foo, service-bar]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # `templates` is tried right-to-left: a service-local override
+      # wins when it exists, otherwise we fall back to the monorepo-wide
+      # template. service-foo has its own override; service-bar falls
+      # back to the root template.
+      #
+      # `env` is dotenv-format (KEY=VALUE per line). `env-file:` is an
+      # alternative for reading the same shape from a path; if both are
+      # given, `env` overrides `env-file`.
+      - name: Render .npmrc
+        uses: e11community/npmrc-auth@v1
+        with:
+          templates: |
+            impl/microservices/.npmrc.tmpl
+            impl/microservices/${{ matrix.service }}/functions/.npmrc.tmpl
+          output: impl/microservices/${{ matrix.service }}/functions/.npmrc
+          env: |
+            PACKAGE_READER=${{ secrets.PACKAGE_READER }}
+
+      - name: Install dependencies
+        working-directory: impl/microservices/${{ matrix.service }}/functions
+        run: npm install
