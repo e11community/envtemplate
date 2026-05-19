@@ -1,7 +1,7 @@
 import { parse as parseDotenv } from 'dotenv'
-import { readFile } from 'fs/promises'
+import { access, readFile, writeFile } from 'fs/promises'
 import { generateNpmrc } from './core.js'
-import type { OnMissing } from './envsubst.js'
+import { envsubst, type OnMissing } from './envsubst.js'
 
 const USAGE = `Usage: npm-auth [options]
 
@@ -11,8 +11,10 @@ the environment.
 Options:
   --template <path>      Path to template file. May be passed multiple
                          times; the rightmost existing file is used,
-                         falling back leftward. (default: .npmrc.tmpl)
-  --output <path>        Path to output file (default: .npmrc)
+                         falling back leftward. Use "-" for stdin.
+                         (default: .npmrc.tmpl)
+  --output <path>        Path to output file. Use "-" for stdout.
+                         (default: .npmrc)
   --env <path>           Path to a .env-style file. When set, substitution
                          variables come from this file (parsed by dotenv)
                          instead of process.env.
@@ -99,6 +101,40 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
   return { templates, output, envFile, onMissing, help }
 }
 
+async function readStdin(): Promise<string> {
+  let data = ''
+  process.stdin.setEncoding('utf8')
+  for await (const chunk of process.stdin) {
+    data += chunk
+  }
+  return data
+}
+
+async function resolveTemplate(candidates: readonly string[]): Promise<string> {
+  const remaining = [...candidates]
+  while (remaining.length > 0) {
+    const candidate = remaining.pop()!
+    if (candidate === '-') {
+      return readStdin()
+    }
+    try {
+      await access(candidate)
+    } catch {
+      continue
+    }
+    return readFile(candidate, 'utf8')
+  }
+  throw new Error(`No template file found. Tried: ${candidates.join(', ')}`)
+}
+
+async function writeOutput(path: string, content: string): Promise<void> {
+  if (path === '-') {
+    process.stdout.write(content)
+    return
+  }
+  await writeFile(path, content, { mode: 0o600 })
+}
+
 async function main(): Promise<number> {
   let parsed: ParsedArgs
   try {
@@ -120,12 +156,21 @@ async function main(): Promise<number> {
       env = parseDotenv(contents)
     }
 
-    await generateNpmrc({
-      templatePath: parsed.templates,
-      outputPath: parsed.output,
-      onMissing: parsed.onMissing,
-      env,
-    })
+    const usesStdin = parsed.templates.includes('-')
+    const usesStdout = parsed.output === '-'
+
+    if (!usesStdin && !usesStdout) {
+      await generateNpmrc({
+        templatePath: parsed.templates,
+        outputPath: parsed.output,
+        onMissing: parsed.onMissing,
+        env,
+      })
+    } else {
+      const template = await resolveTemplate(parsed.templates)
+      const rendered = envsubst(template, { env, onMissing: parsed.onMissing })
+      await writeOutput(parsed.output, rendered)
+    }
     return 0
   } catch (err) {
     process.stderr.write(`${(err as Error).message}\n`)

@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "bin": {
-    "npm-auth": "./dist/cli.js"
+    "npmrc-auth": "./dist/cli.js"
   },
   "scripts": {
     "build:action": "esbuild src/action.ts --bundle --platform=node --target=node24 --format=cjs --minify --outfile=dist/action.js",
     "build:cli": "esbuild src/cli.ts --bundle --platform=node --target=node24 --format=cjs --minify --outfile=dist/cli.js --banner:js='#!/usr/bin/env node'",
     "build": "npm run build:action && npm run build:cli && chmod +x dist/cli.js",
     "typecheck": "tsc --noEmit",
+    "pretest": "npm run build:cli",
     "test": "jest"
   },
   "dependencies": {
