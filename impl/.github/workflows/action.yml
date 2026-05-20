@@ -29,14 +29,14 @@ jobs:
       # alternative for reading the same shape from a path; if both are
       # given, `env` overrides `env-file`.
       - name: Render .npmrc
-        uses: '@e11community/envtemplate@v1'
+        uses: 'e11community/envtemplate@v1'
         with:
           templates: |
             impl/microservices/.npmrc.tmpl
             impl/microservices/${{ matrix.service }}/functions/.npmrc.tmpl
           output: impl/microservices/${{ matrix.service }}/functions/.npmrc
           env: |
-            PACKAGE_READER=${{ secrets.PACKAGE_READER }}
+            PACKAGE_READER_NPM_AUTH_TOKEN=${{ fromJson(secrets.PACKAGE_READER).token }}
 
       - name: Install dependencies
         working-directory: impl/microservices/${{ matrix.service }}/functions
