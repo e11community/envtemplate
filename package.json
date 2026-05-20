@@ -1,6 +1,6 @@
 {
   "name": "@e11community/envtemplate",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/e11community/envtemplate.git"
@@ -14,7 +14,7 @@
     "access": "public"
   },
   "bin": {
-    "envtemplate": "./dist/cli.js"
+    "envtemplate": "dist/cli.js"
   },
   "scripts": {
     "build:action": "esbuild src/action.ts --bundle --platform=node --target=node24 --format=cjs --minify --outfile=dist/action.js",
