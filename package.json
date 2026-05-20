@@ -5,7 +5,11 @@
     "type": "git",
     "url": "git+https://github.com/e11community/envtemplate.git"
   },
-  "files": ["dist/", "action.yml"],
+  "files": [
+    "dist/",
+    "action.yml",
+    "README.md"
+  ],
   "publishConfig": {
     "access": "public"
   },
