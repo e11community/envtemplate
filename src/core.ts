@@ -1,5 +1,5 @@
-import { access, readFile, writeFile } from 'fs/promises'
-import { envsubst, type OnMissing } from './envsubst.js'
+import {access, readFile, writeFile} from 'fs/promises'
+import {envsubst, type OnMissing} from './envsubst.js'
 
 export const DEFAULT_OUTPUT_MODE = 0o600
 
@@ -12,9 +12,7 @@ export interface RenderTemplateOptions {
 }
 
 export async function renderTemplate(opts: RenderTemplateOptions): Promise<void> {
-  const candidates = Array.isArray(opts.templatePath)
-    ? opts.templatePath
-    : [opts.templatePath]
+  const candidates = Array.isArray(opts.templatePath) ? opts.templatePath : [opts.templatePath]
   const tried = [...candidates]
   const mode = opts.outputMode ?? DEFAULT_OUTPUT_MODE
 
@@ -25,9 +23,9 @@ export async function renderTemplate(opts: RenderTemplateOptions): Promise<void>
     } catch {
       continue
     }
-    const template = await readFile(candidate, { encoding: 'utf8' })
-    const rendered = envsubst(template, { env: opts.env, onMissing: opts.onMissing })
-    await writeFile(opts.outputPath, rendered, { mode })
+    const template = await readFile(candidate, {encoding: 'utf8'})
+    const rendered = envsubst(template, {env: opts.env, onMissing: opts.onMissing})
+    await writeFile(opts.outputPath, rendered, {mode})
     return
   }
 

@@ -1,7 +1,7 @@
-import { parse as parseDotenv } from 'dotenv'
-import { access, readFile, writeFile } from 'fs/promises'
-import { DEFAULT_OUTPUT_MODE, renderTemplate } from './core.js'
-import { envsubst, type OnMissing } from './envsubst.js'
+import {parse as parseDotenv} from 'dotenv'
+import {access, readFile, writeFile} from 'fs/promises'
+import {DEFAULT_OUTPUT_MODE, renderTemplate} from './core.js'
+import {envsubst, type OnMissing} from './envsubst.js'
 
 const USAGE = `Usage: envtemplate --template <path> --output <path> [options]
 
@@ -40,9 +40,7 @@ function isOnMissing(value: string): value is OnMissing {
 
 function parseOctalMode(value: string): number {
   if (!/^[0-7]+$/.test(value)) {
-    throw new Error(
-      `Invalid --output-mode value: ${value} (expected chmod-style octal, e.g. 600)`,
-    )
+    throw new Error(`Invalid --output-mode value: ${value} (expected chmod-style octal, e.g. 600)`)
   }
   return parseInt(value, 8)
 }
@@ -114,7 +112,7 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
   }
 
   if (help) {
-    return { templates, output: '', outputMode, envFile, onMissing, help }
+    return {templates, output: '', outputMode, envFile, onMissing, help}
   }
 
   if (templates.length === 0) {
@@ -124,7 +122,7 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
     throw new Error('Missing required argument: --output')
   }
 
-  return { templates, output, outputMode, envFile, onMissing, help }
+  return {templates, output, outputMode, envFile, onMissing, help}
 }
 
 async function readStdin(): Promise<string> {
@@ -158,7 +156,7 @@ async function writeOutput(path: string, content: string, mode: number): Promise
     process.stdout.write(content)
     return
   }
-  await writeFile(path, content, { mode })
+  await writeFile(path, content, {mode})
 }
 
 async function main(): Promise<number> {
@@ -195,7 +193,7 @@ async function main(): Promise<number> {
       })
     } else {
       const template = await resolveTemplate(parsed.templates)
-      const rendered = envsubst(template, { env, onMissing: parsed.onMissing })
+      const rendered = envsubst(template, {env, onMissing: parsed.onMissing})
       await writeOutput(parsed.output, rendered, parsed.outputMode ?? DEFAULT_OUTPUT_MODE)
     }
     return 0
@@ -205,6 +203,6 @@ async function main(): Promise<number> {
   }
 }
 
-main().then((code) => {
+main().then(code => {
   process.exit(code)
 })

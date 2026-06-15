@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "strict": true,
     "isolatedModules": true,
     "esModuleInterop": true,
@@ -12,7 +12,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "types": ["node"]
+    "types": ["node", "jest"]
   },
   "include": ["src/**/*"]
 }

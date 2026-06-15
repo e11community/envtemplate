@@ -23,18 +23,40 @@
     "build": "npm run build:action && npm run build:cli && chmod +x dist/cli.js",
     "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format-check": "prettier --check .",
+    "commit": "cz",
+    "prepare": "husky",
     "pretest": "npm run build:cli",
     "test": "jest"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
+  "lint-staged": {
+    "*": "prettier --ignore-unknown --write"
   },
   "dependencies": {
     "@actions/core": "^3.0.1",
     "dotenv": "^17.4.2"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21",
+    "@commitlint/config-conventional": "^21",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.12.4",
+    "commitizen": "^4",
+    "conventional-changelog": "^7",
+    "conventional-changelog-conventionalcommits": "^9",
+    "conventional-recommended-bump": "^11",
+    "cz-conventional-changelog": "^3",
     "esbuild": "^0.28.0",
+    "husky": "^9",
     "jest": "^30.4.2",
+    "lint-staged": "^16",
+    "prettier": "^3",
     "ts-jest": "^29.4.9",
     "typescript": "^6.0.3"
   }

@@ -1,0 +1,32 @@
+# Copy to .github/dependabot.yml in a TypeScript action repo.
+# Keeps the pinned github-actions refs and the npm toolchain current.
+#
+# Commit messages are Conventional-Commit shaped (prefix + (deps) scope) so they
+# pass commitlint and the release workflow's parser. The prefixes are
+# NON-releasing types (ci/chore) by design — a dependency bump shouldn't
+# surprise-cut a release.
+#
+# dist caveat: a bump to a bundled runtime dependency (@actions/*, etc.) changes
+# dist/action.js, but Dependabot does NOT rebuild dist/ — so check.yml's
+# dist-sync guard fails that PR until you push a `npm run build` commit onto it.
+# github-actions and dev-tooling bumps don't touch dist/.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+      include: scope
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      dev-tooling:
+        dependency-type: development

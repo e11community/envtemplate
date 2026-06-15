@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from '@jest/globals'
-import { spawn } from 'child_process'
-import { mkdtemp, readFile, rm, stat, writeFile } from 'fs/promises'
-import { tmpdir } from 'os'
-import { join, resolve } from 'path'
+import {afterEach, beforeEach, describe, expect, it} from '@jest/globals'
+import {spawn} from 'child_process'
+import {mkdtemp, readFile, rm, stat, writeFile} from 'fs/promises'
+import {tmpdir} from 'os'
+import {join, resolve} from 'path'
 
 const CLI_PATH = resolve(__dirname, '..', 'dist', 'cli.js')
 
@@ -12,25 +12,22 @@ interface CliRun {
   code: number
 }
 
-function runCli(
-  args: readonly string[],
-  opts: { stdin?: string; env?: Record<string, string> } = {},
-): Promise<CliRun> {
+function runCli(args: readonly string[], opts: {stdin?: string; env?: Record<string, string>} = {}): Promise<CliRun> {
   return new Promise((resolveP, rejectP) => {
     const child = spawn('node', [CLI_PATH, ...args], {
-      env: { ...process.env, ...opts.env },
+      env: {...process.env, ...opts.env},
     })
     let stdout = ''
     let stderr = ''
-    child.stdout.on('data', (d) => {
+    child.stdout.on('data', d => {
       stdout += d.toString('utf8')
     })
-    child.stderr.on('data', (d) => {
+    child.stderr.on('data', d => {
       stderr += d.toString('utf8')
     })
     child.on('error', rejectP)
-    child.on('close', (code) => {
-      resolveP({ stdout, stderr, code: code ?? -1 })
+    child.on('close', code => {
+      resolveP({stdout, stderr, code: code ?? -1})
     })
     if (opts.stdin !== undefined) {
       child.stdin.write(opts.stdin)
@@ -47,13 +44,13 @@ describe('cli stdin/stdout', () => {
   })
 
   afterEach(async () => {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, {recursive: true, force: true})
   })
 
   it('reads template from stdin and writes rendered output to stdout', async () => {
     const result = await runCli(['--template', '-', '--output', '-'], {
       stdin: 'token=${BAR}',
-      env: { BAR: 'baz' },
+      env: {BAR: 'baz'},
     })
 
     expect(result.code).toBe(0)
@@ -66,7 +63,7 @@ describe('cli stdin/stdout', () => {
 
     const result = await runCli(['--template', '-', '--output', out], {
       stdin: 'token=${BAR}',
-      env: { BAR: 'baz' },
+      env: {BAR: 'baz'},
     })
 
     expect(result.code).toBe(0)
@@ -80,7 +77,7 @@ describe('cli stdin/stdout', () => {
     await writeFile(tmpl, 'token=${BAR}')
 
     const result = await runCli(['--template', tmpl, '--output', '-'], {
-      env: { BAR: 'baz' },
+      env: {BAR: 'baz'},
     })
 
     expect(result.code).toBe(0)
@@ -91,10 +88,7 @@ describe('cli stdin/stdout', () => {
     const tmpl = join(dir, 'template.tmpl')
     await writeFile(tmpl, 'from=file')
 
-    const result = await runCli(
-      ['--template', tmpl, '--template', '-', '--output', '-'],
-      { stdin: 'from=stdin' },
-    )
+    const result = await runCli(['--template', tmpl, '--template', '-', '--output', '-'], {stdin: 'from=stdin'})
 
     expect(result.code).toBe(0)
     expect(result.stdout).toBe('from=stdin')
@@ -103,10 +97,7 @@ describe('cli stdin/stdout', () => {
   it('falls back to stdin when a later file candidate is missing', async () => {
     const missing = join(dir, 'does-not-exist.tmpl')
 
-    const result = await runCli(
-      ['--template', '-', '--template', missing, '--output', '-'],
-      { stdin: 'from=stdin' },
-    )
+    const result = await runCli(['--template', '-', '--template', missing, '--output', '-'], {stdin: 'from=stdin'})
 
     expect(result.code).toBe(0)
     expect(result.stdout).toBe('from=stdin')
@@ -115,10 +106,7 @@ describe('cli stdin/stdout', () => {
   it('respects --output-mode for file output', async () => {
     const out = join(dir, 'output')
 
-    const result = await runCli(
-      ['--template', '-', '--output', out, '--output-mode', '644'],
-      { stdin: 'x' },
-    )
+    const result = await runCli(['--template', '-', '--output', out, '--output-mode', '644'], {stdin: 'x'})
 
     expect(result.code).toBe(0)
     const st = await stat(out)
@@ -126,10 +114,7 @@ describe('cli stdin/stdout', () => {
   })
 
   it('exits with code 2 on an invalid --output-mode', async () => {
-    const result = await runCli(
-      ['--template', '-', '--output', '-', '--output-mode', '9ab'],
-      { stdin: 'unused' },
-    )
+    const result = await runCli(['--template', '-', '--output', '-', '--output-mode', '9ab'], {stdin: 'unused'})
 
     expect(result.code).toBe(2)
     expect(result.stderr).toContain('Invalid --output-mode')
@@ -143,7 +128,7 @@ describe('cli stdin/stdout', () => {
   })
 
   it('exits with code 2 and a clear error when --output is omitted', async () => {
-    const result = await runCli(['--template', '-'], { stdin: 'unused' })
+    const result = await runCli(['--template', '-'], {stdin: 'unused'})
 
     expect(result.code).toBe(2)
     expect(result.stderr).toContain('Missing required argument: --output')
