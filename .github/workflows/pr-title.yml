@@ -1,0 +1,29 @@
+# Copy to .github/workflows/pr-title.yml in a TypeScript action repo.
+# Validates that the PR title is a Conventional Commit. With squash-merge the
+# squash commit takes the PR title — so the PR title (NOT the branch commits,
+# which squash discards) is what lands on main and what release.yml parses for
+# the version bump. See the "Squash-merge: the PR title is what ships" section.
+# Re-runs on `edited` so fixing the title clears the check.
+#
+# Uses `pull_request` (not `pull_request_target`): the workflow runs from the PR
+# head, so it validates the PR that introduces it and every PR thereafter. Safe
+# here — it reads the title from the event payload and checks out no PR code.
+# (For public repos that take fork PRs and want the failure comment, switch to
+# pull_request_target — but then the file must already be on the default branch.)
+name: pr-title
+run-name: PR Title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: write # post/update a comment explaining a bad title
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

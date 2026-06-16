@@ -126,4 +126,3 @@ and `.env` that contain bearer tokens. Defaulting to `0o600` (owner
 read/write only) means a misconfigured CI job won't leave a world-readable
 secret on disk. Override with `--output-mode` / `output-mode:` when you
 need something more permissive.
-

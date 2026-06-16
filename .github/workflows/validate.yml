@@ -1,0 +1,71 @@
+# Copy to .github/workflows/validate.yml in a TypeScript action repo.
+# Verifies the source type-checks, is formatted, builds — and crucially that the
+# committed dist/ bundle matches a fresh build, so the action never ships stale
+# code. See the "CI: guard the committed dist/" section of the skill.
+name: validate
+run-name: Validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # Validate that every commit in the PR follows Conventional Commits. The release
+  # workflow derives the version bump from these messages, so malformed commits would
+  # corrupt versioning. Runs on PRs only (commits on main are already merged).
+  commitlint:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # need the full PR commit range to lint it
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint PR commits
+        run: npx --no -- commitlint --from "${{ github.event.pull_request.base.sha }}" --to "${{ github.event.pull_request.head.sha }}" --verbose
+
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Format check
+        run: npm run format-check
+
+      - name: Build bundle
+        run: npm run build
+
+      # Also a published npm package (bin: envtemplate) — run the jest suite.
+      - name: Test
+        run: npm test
+
+      # The runner executes the committed dist/action.js, not src/. If the
+      # bundle was not rebuilt after a src/ change, the action runs stale code.
+      # Fail the PR when dist/ differs from a fresh build.
+      - name: Verify dist/ is in sync with src/
+        run: |
+          if ! git diff --exit-code -- dist/; then
+            echo "::error::dist/ is out of date — run 'npm run build' and commit the result."
+            exit 1
+          fi
