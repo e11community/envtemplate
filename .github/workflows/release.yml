@@ -2,8 +2,9 @@
 # Auto-release on merge to main. Conventional commits since the last vMAJOR.MINOR.PATCH
 # tag decide the bump level; this workflow bumps package.json, regenerates CHANGELOG.md,
 # commits both as a single `chore(release)` commit, tags the new version, force-moves the
-# major tag (vMAJOR) so `@v1` consumers track the latest, and publishes a GitHub Release.
-# See the "Conventional commits drive the version" section of the skill.
+# major tag (vMAJOR) so `@v1` consumers track the latest, publishes a GitHub Release, and
+# publishes the package to npm via OIDC trusted publishing. See the "Conventional commits
+# drive the version" section of the skill, and docs/PUBLISHING.md for the npm-publish design.
 #
 # Loop guard: the release commit is a non-releasable `chore(release): …` AND carries
 # `[skip ci]`, so the push it creates cannot trigger another release run.
@@ -22,6 +23,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write # OIDC token for npm trusted publishing (provenance)
 
 concurrency:
   group: release
@@ -39,6 +41,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+          registry-url: 'https://registry.npmjs.org'
 
       - run: npm ci
 
@@ -60,6 +63,14 @@ jobs:
             echo "release=false" >> "$GITHUB_OUTPUT"
             echo "No releasable commits since ${LAST}; skipping release."
           fi
+
+      # Build + test BEFORE any tag/commit, so a broken build never leaves an
+      # orphaned vX.Y.Z tag or a GitHub Release with no matching npm version.
+      - name: Build and test
+        if: steps.decide.outputs.release == 'true'
+        run: |
+          npm run build
+          npm test
 
       - name: Create release
         if: steps.decide.outputs.release == 'true'
@@ -87,3 +98,13 @@ jobs:
           git push -f origin "$MAJOR"
 
           gh release create "$VERSION" --title "$VERSION" --notes-file "${RUNNER_TEMP}/notes.md"
+
+      # Publish the just-bumped version to the public npm registry via OIDC trusted
+      # publishing — no NODE_AUTH_TOKEN/NPM_TOKEN. Authn is the short-lived OIDC token
+      # (id-token: write) verified against the trusted-publisher config on npmjs.com;
+      # provenance is attached automatically. Requires npm >= 11.5.1.
+      - name: Publish to npm
+        if: steps.decide.outputs.release == 'true'
+        run: |
+          npm install -g npm@latest
+          npm publish
