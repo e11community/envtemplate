@@ -1,0 +1,86 @@
+# Release automation via release-please (PR-based) for this single-package action + CLI.
+#
+# Flow (see docs/PUBLISHING.md): on every push to the default branch, release-please
+# maintains a "release PR" containing the version bump + CHANGELOG. A human merges that
+# PR; the resulting push runs this workflow again, release-please tags vX.Y.Z and creates
+# the GitHub Release (releases_created=true), and the publish job then force-moves the
+# rolling vMAJOR tag and publishes to npm via OIDC trusted publishing.
+#
+# Why no GitHub App/PAT is needed even with a locked default branch: release-please only
+# ever pushes to its OWN release branch and opens a PR — it never pushes to the default
+# branch. Humans merge. The vMAJOR move + npm publish run with the built-in GITHUB_TOKEN
+# (tags aren't governed by branch rules; npm auth is OIDC).
+name: release
+run-name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # release commits, tags, GitHub Releases
+      pull-requests: write # open / maintain the release PR
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      major: ${{ steps.release.outputs.major }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      sha: ${{ steps.release.outputs.sha }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # force-move the rolling vMAJOR tag
+      id-token: write # npm OIDC trusted publishing (provenance)
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # tags + the release commit, to move vMAJOR
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm ci
+
+      # Rebuild + test before publishing so a broken bundle never ships.
+      - run: npm run build
+      - run: npm test
+
+      # Hand-rolled rolling major tag: release-please cuts vX.Y.Z but does NOT maintain
+      # the vMAJOR alias that Action consumers pin (e.g. e11community/envtemplate@v1).
+      - name: Move major version tag
+        env:
+          MAJOR: v${{ needs.release-please.outputs.major }}
+          SHA: ${{ needs.release-please.outputs.sha }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -fa "$MAJOR" -m "$MAJOR" "$SHA"
+          git push -f origin "$MAJOR"
+
+      - name: Publish to npm
+        run: |
+          npm install -g npm@latest
+          npm publish
