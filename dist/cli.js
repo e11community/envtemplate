@@ -6,13 +6,13 @@
 Render a template, substituting \${VAR} references from the environment.
 
 Required:
-  --template <path>      Path to a template file. May be passed multiple
+  -t, --template <path>  Path to a template file. May be passed multiple
                          times; the rightmost existing file is used,
                          falling back leftward. Use "-" for stdin.
-  --output <path>        Path to the output file. Use "-" for stdout.
+  -o, --output <path>    Path to the output file. Use "-" for stdout.
 
 Options:
-  --env <path>           Path to a .env-style file. When set, substitution
+  -e, --env <path>       Path to a .env-style file. When set, substitution
                          variables come from this file (parsed by dotenv)
                          instead of process.env.
   --output-mode <octal>  File mode for the output file (chmod-style octal,
@@ -21,7 +21,7 @@ Options:
   --on-missing <mode>    Behavior on missing var: error | empty | keep
                          (default: empty)
   -h, --help             Show this help and exit
-`;function oe(e){return e==="error"||e==="empty"||e==="keep"}function ie(e){if(!/^[0-7]+$/.test(e))throw new Error(`Invalid --output-mode value: ${e} (expected chmod-style octal, e.g. 600)`);return parseInt(e,8)}function ae(e){let t=[],n,s,o,i="empty",r=!1,a=(c,f,u)=>{if(f!==void 0)return[f,u];let d=e[u+1];if(d===void 0)throw new Error(`Missing value for ${c}`);return[d,u+1]};for(let c=0;c<e.length;c++){let f=e[c],u=f.indexOf("="),d=u===-1?f:f.slice(0,u),m=u===-1?void 0:f.slice(u+1);switch(d){case"-h":case"--help":r=!0;break;case"--template":{let[p,g]=a(d,m,c);t.push(p),c=g;break}case"--output":{let[p,g]=a(d,m,c);n=p,c=g;break}case"--env":{let[p,g]=a(d,m,c);o=p,c=g;break}case"--output-mode":{let[p,g]=a(d,m,c);s=ie(p),c=g;break}case"--on-missing":{let[p,g]=a(d,m,c);if(!oe(p))throw new Error(`Invalid --on-missing value: ${p} (expected: error, empty, keep)`);i=p,c=g;break}default:throw new Error(`Unknown argument: ${f}`)}}if(r)return{templates:t,output:"",outputMode:s,envFile:o,onMissing:i,help:r};if(t.length===0)throw new Error("Missing required argument: --template");if(n===void 0)throw new Error("Missing required argument: --output");return{templates:t,output:n,outputMode:s,envFile:o,onMissing:i,help:r}}async function ce(){let e="";process.stdin.setEncoding("utf8");for await(let t of process.stdin)e+=t;return e}async function ue(e){let t=[...e];for(;t.length>0;){let n=t.pop();if(n==="-")return ce();try{await(0,v.access)(n)}catch{continue}return(0,v.readFile)(n,"utf8")}throw new Error(`No template file found. Tried: ${e.join(", ")}`)}async function le(e,t,n){if(e==="-"){process.stdout.write(t);return}await(0,v.writeFile)(e,t,{mode:n})}async function de(){let e;try{e=ae(process.argv.slice(2))}catch(t){return process.stderr.write(`${t.message}
+`;function oe(e){return e==="error"||e==="empty"||e==="keep"}function ie(e){if(!/^[0-7]+$/.test(e))throw new Error(`Invalid --output-mode value: ${e} (expected chmod-style octal, e.g. 600)`);return parseInt(e,8)}function ae(e){let t=[],n,s,o,i="empty",r=!1,a=(c,f,u)=>{if(f!==void 0)return[f,u];let d=e[u+1];if(d===void 0)throw new Error(`Missing value for ${c}`);return[d,u+1]};for(let c=0;c<e.length;c++){let f=e[c],u=f.indexOf("="),d=u===-1?f:f.slice(0,u),m=u===-1?void 0:f.slice(u+1);switch(d){case"-h":case"--help":r=!0;break;case"-t":case"--template":{let[p,g]=a(d,m,c);t.push(p),c=g;break}case"-o":case"--output":{let[p,g]=a(d,m,c);n=p,c=g;break}case"-e":case"--env":{let[p,g]=a(d,m,c);o=p,c=g;break}case"--output-mode":{let[p,g]=a(d,m,c);s=ie(p),c=g;break}case"--on-missing":{let[p,g]=a(d,m,c);if(!oe(p))throw new Error(`Invalid --on-missing value: ${p} (expected: error, empty, keep)`);i=p,c=g;break}default:throw new Error(`Unknown argument: ${f}`)}}if(r)return{templates:t,output:"",outputMode:s,envFile:o,onMissing:i,help:r};if(t.length===0)throw new Error("Missing required argument: --template");if(n===void 0)throw new Error("Missing required argument: --output");return{templates:t,output:n,outputMode:s,envFile:o,onMissing:i,help:r}}async function ce(){let e="";process.stdin.setEncoding("utf8");for await(let t of process.stdin)e+=t;return e}async function ue(e){let t=[...e];for(;t.length>0;){let n=t.pop();if(n==="-")return ce();try{await(0,v.access)(n)}catch{continue}return(0,v.readFile)(n,"utf8")}throw new Error(`No template file found. Tried: ${e.join(", ")}`)}async function le(e,t,n){if(e==="-"){process.stdout.write(t);return}await(0,v.writeFile)(e,t,{mode:n})}async function de(){let e;try{e=ae(process.argv.slice(2))}catch(t){return process.stderr.write(`${t.message}
 
 ${P}`),2}if(e.help)return process.stdout.write(P),0;try{let t;if(e.envFile!==void 0){let o=await(0,v.readFile)(e.envFile,"utf8");t=(0,k.parse)(o)}let n=e.templates.includes("-"),s=e.output==="-";if(!n&&!s)await A({templatePath:e.templates,outputPath:e.output,outputMode:e.outputMode,onMissing:e.onMissing,env:t});else{let o=await ue(e.templates),i=O(o,{env:t,onMissing:e.onMissing});await le(e.output,i,e.outputMode??D)}return 0}catch(t){return process.stderr.write(`${t.message}
 `),1}}de().then(e=>{process.exit(e)});

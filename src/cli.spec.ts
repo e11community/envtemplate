@@ -103,6 +103,16 @@ describe('cli stdin/stdout', () => {
     expect(result.stdout).toBe('from=stdin')
   })
 
+  it('accepts the short flags -t/-o/-e as aliases for --template/--output/--env', async () => {
+    const envFile = join(dir, '.env')
+    await writeFile(envFile, 'BAR=fromfile')
+
+    const result = await runCli(['-t', '-', '-o', '-', '-e', envFile], {stdin: 'token=${BAR}'})
+
+    expect(result.code).toBe(0)
+    expect(result.stdout).toBe('token=fromfile')
+  })
+
   it('respects --output-mode for file output', async () => {
     const out = join(dir, 'output')
 

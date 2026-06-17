@@ -8,13 +8,13 @@ const USAGE = `Usage: envtemplate --template <path> --output <path> [options]
 Render a template, substituting \${VAR} references from the environment.
 
 Required:
-  --template <path>      Path to a template file. May be passed multiple
+  -t, --template <path>  Path to a template file. May be passed multiple
                          times; the rightmost existing file is used,
                          falling back leftward. Use "-" for stdin.
-  --output <path>        Path to the output file. Use "-" for stdout.
+  -o, --output <path>    Path to the output file. Use "-" for stdout.
 
 Options:
-  --env <path>           Path to a .env-style file. When set, substitution
+  -e, --env <path>       Path to a .env-style file. When set, substitution
                          variables come from this file (parsed by dotenv)
                          instead of process.env.
   --output-mode <octal>  File mode for the output file (chmod-style octal,
@@ -73,18 +73,21 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
       case '--help':
         help = true
         break
+      case '-t':
       case '--template': {
         const [value, next] = takeValue(name, inline, i)
         templates.push(value)
         i = next
         break
       }
+      case '-o':
       case '--output': {
         const [value, next] = takeValue(name, inline, i)
         output = value
         i = next
         break
       }
+      case '-e':
       case '--env': {
         const [value, next] = takeValue(name, inline, i)
         envFile = value
