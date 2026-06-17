@@ -10,8 +10,8 @@
 # ever pushes to its OWN release branch and opens a PR — it never pushes to the default
 # branch. Humans merge. The vMAJOR move + npm publish run with the built-in GITHUB_TOKEN
 # (tags aren't governed by branch rules; npm auth is OIDC).
-name: release
-run-name: Release
+name: release-please
+run-name: Release Please
 
 on:
   push:
