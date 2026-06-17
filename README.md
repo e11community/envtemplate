@@ -21,14 +21,14 @@ After install, the `envtemplate` command is on your `PATH`.
 envtemplate --template <path> --output <path> [options]
 ```
 
-| Flag                  | Required | Description                                                                                                                                   |
-| --------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--template <path>`   | Yes      | Template path. Repeatable; rightmost-existing wins, falling back leftward. Pass `-` to read from stdin.                                       |
-| `--output <path>`     | Yes      | Output path. Pass `-` to write to stdout.                                                                                                     |
-| `--env <path>`        | No       | Path to a `.env`-style file (parsed by [`dotenv`](https://www.npmjs.com/package/dotenv)). When set, replaces `process.env` as the var source. |
-| `--output-mode <oct>` | No       | File mode for the output file, chmod-style octal (e.g. `600`, `644`). Ignored when `--output` is `-`. Default: `600`.                         |
-| `--on-missing <mode>` | No       | Behavior when a `${VAR}` has no value: `error`, `empty`, or `keep`. Default: `empty`.                                                         |
-| `-h`, `--help`        | No       | Show help and exit.                                                                                                                           |
+| Flag                    | Required | Description                                                                                                                                   |
+| ----------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-t, --template <path>` | Yes      | Template path. Repeatable; rightmost-existing wins, falling back leftward. Pass `-` to read from stdin.                                       |
+| `-o, --output <path>`   | Yes      | Output path. Pass `-` to write to stdout.                                                                                                     |
+| `-e, --env <path>`      | No       | Path to a `.env`-style file (parsed by [`dotenv`](https://www.npmjs.com/package/dotenv)). When set, replaces `process.env` as the var source. |
+| `--output-mode <oct>`   | No       | File mode for the output file, chmod-style octal (e.g. `600`, `644`). Ignored when `--output` is `-`. Default: `600`.                         |
+| `--on-missing <mode>`   | No       | Behavior when a `${VAR}` has no value: `error`, `empty`, or `keep`. Default: `empty`.                                                         |
+| `-h`, `--help`          | No       | Show help and exit.                                                                                                                           |
 
 ### Substitution rules
 
