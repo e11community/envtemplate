@@ -5,10 +5,12 @@
 name: validate
 run-name: Validate
 
+# Runs on pull requests only. There is no `push: [main]` trigger: with the
+# locked default branch everything reaches main through a PR that already ran
+# this workflow, so a post-merge re-run is redundant — and it would otherwise
+# fire again on release-please's release-PR merge.
 on:
   pull_request:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
@@ -16,9 +18,12 @@ permissions:
 jobs:
   # Validate that every commit in the PR follows Conventional Commits. The release
   # workflow derives the version bump from these messages, so malformed commits would
-  # corrupt versioning. Runs on PRs only (commits on main are already merged).
+  # corrupt versioning.
+  #
+  # Skipped on release-please's own release PRs (head branch `release-please--*`):
+  # those are bot-authored with generated commits/title and need no linting.
   commitlint:
-    if: github.event_name == 'pull_request'
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -36,6 +41,9 @@ jobs:
         run: npx --no -- commitlint --from "${{ github.event.pull_request.base.sha }}" --to "${{ github.event.pull_request.head.sha }}" --verbose
 
   check:
+    # Skip release-please's release PRs — a generated version bump + changelog,
+    # already covered by the source's own PR.
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
