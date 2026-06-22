@@ -46,7 +46,7 @@
     "@commitlint/cli": "^21",
     "@commitlint/config-conventional": "^21",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.0.0",
     "commitizen": "^4",
     "cz-conventional-changelog": "^3",
     "esbuild": "^0.28.1",
