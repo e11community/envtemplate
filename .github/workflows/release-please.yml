@@ -51,7 +51,7 @@ jobs:
       contents: write # force-move the rolling vMAJOR tag
       id-token: write # npm OIDC trusted publishing (provenance)
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # tags + the release commit, to move vMAJOR
 
